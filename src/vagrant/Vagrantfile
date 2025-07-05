@@ -1,0 +1,32 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/focal64"
+
+config.vm.define "manager01" do |manager|
+    manager.vm.hostname = "manager01"
+    manager.vm.network "private_network", ip: "192.168.33.10"
+    manager.vm.network "forwarded_port", guest: 81, host: 8081
+    manager.vm.network "forwarded_port", guest: 87, host: 8087
+    manager.vm.network "forwarded_port", guest: 9000, host: 9000
+    manager.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = 3
+      vb.name = "manager01"
+    end
+    manager.vm.provision "file", source: "./docker-compose.yml", destination: "/home/vagrant/docker-compose.yml"
+    manager.vm.provision "file", source: "./nginx.conf", destination: "/home/vagrant/nginx.conf"
+    manager.vm.provision "shell", path: "docker_swarm.sh"
+ end
+
+(1..2).each do |i|
+    config.vm.define "worker0#{i}" do |worker|
+      worker.vm.hostname = "worker0#{i}"
+      worker.vm.network "private_network", ip: "192.168.33.1#{i}"
+      worker.vm.provider "virtualbox" do |vb|
+        vb.memory = "2048"
+        vb.cpus = 2
+        vb.name = "worker#{i}"
+      end
+      worker.vm.provision "shell", path: "docker_swarm.sh"
+    end
+  end
+end
